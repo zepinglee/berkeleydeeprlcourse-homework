@@ -86,11 +86,8 @@ def make_session(num_cpu):
     return tf.Session(config=tf_config)
 
 
-ALREADY_INITIALIZED = set()
 def initialize():
-    new_variables = set(tf.all_variables()) - ALREADY_INITIALIZED
-    get_session().run(tf.initialize_variables(new_variables))
-    ALREADY_INITIALIZED.update(new_variables)
+    get_session().run(tf.global_variables_initializer())
 
 
 def eval(expr, feed_dict=None):
