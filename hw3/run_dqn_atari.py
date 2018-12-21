@@ -30,7 +30,8 @@ def atari_model(img_in, num_actions, scope, reuse=False):
 
 def atari_learn(env,
                 session,
-                num_timesteps):
+                num_timesteps,
+                double_q=False):
     # This is just a rough estimate
     num_iterations = float(num_timesteps) / 4.0
 
@@ -75,7 +76,7 @@ def atari_learn(env,
         frame_history_len=4,
         target_update_freq=10000,
         grad_norm_clipping=10,
-        double_q=True
+        double_q=double_q,
     )
     env.close()
 
@@ -99,6 +100,7 @@ def get_session():
     tf_config = tf.ConfigProto(
         inter_op_parallelism_threads=1,
         intra_op_parallelism_threads=1)
+    tf_config.gpu_options.allow_growth = True
     session = tf.Session(config=tf_config)
     print("AVAILABLE GPUS: ", get_available_gpus())
     return session
@@ -110,12 +112,18 @@ def get_env(task, seed):
     env.seed(seed)
 
     expt_dir = '/tmp/hw3_vid_dir2/'
-    env = wrappers.Monitor(env, osp.join(expt_dir, "gym"), force=True)
+    env = wrappers.Monitor(env, osp.join(expt_dir, "gym"), force=True,
+                           video_callable=False)
     env = wrap_deepmind(env)
 
     return env
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--num_timesteps', '-n', type=float, default=2e8)
+    parser.add_argument('--double_q', '-d', action='store_true')
+    args = parser.parse_args()
+
     # Get Atari games.
     task = gym.make('PongNoFrameskip-v4')
 
@@ -124,7 +132,8 @@ def main():
     print('random seed = %d' % seed)
     env = get_env(task, seed)
     session = get_session()
-    atari_learn(env, session, num_timesteps=2e8)
+    atari_learn(env, session, num_timesteps=args.num_timesteps,
+                double_q=args.double_q)
 
 if __name__ == "__main__":
     main()
